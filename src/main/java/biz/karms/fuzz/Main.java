@@ -14,9 +14,9 @@ public class Main implements QuarkusApplication {
 
     @Override
     public int run(String... args) throws Exception {
-        if (args.length != 2) {
+        if (args.length != 3) {
             System.out.print("""
-                    Usage: ./fuzz <-n | -v> <input file>
+                    Usage: ./fuzz <port> <-n | -v> <input file>
                            -n: Normal mode
                            -v: Verbose mode
                                         
@@ -25,16 +25,16 @@ public class Main implements QuarkusApplication {
             System.in.read();
             return 0;
         }
-        try (final BufferedInputStream f = new BufferedInputStream(Files.newInputStream(Path.of(args[1])));
-             final Socket socket = new Socket("localhost", 8080);
+        try (final BufferedInputStream f = new BufferedInputStream(Files.newInputStream(Path.of(args[2])));
+             final Socket socket = new Socket("localhost", Integer.parseInt(args[0]));
              final BufferedOutputStream o =
                      new BufferedOutputStream(socket.getOutputStream());
              final BufferedInputStream i =
                      new BufferedInputStream(socket.getInputStream())) {
             f.transferTo(o);
             o.flush();
-            if (args[0].equals("-v")) {
-                // Note that you must not ask for keep-alive in the requests.
+            if (args[1].equals("-v")) {
+                // Note that you must not ask for Connection: Keep-Alive in the requests, or the readAllBytes() will hang here.
                 System.out.println(new String(i.readAllBytes()));
             } else {
                 // We don't care about the output. We just cannot hang up immediately.
