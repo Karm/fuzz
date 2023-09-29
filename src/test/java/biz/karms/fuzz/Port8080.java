@@ -11,5 +11,4 @@ public class Port8080 implements QuarkusTestProfile {
                 "quarkus.http.port", "8080",
                 "quarkus.http.test-port", "8080");
     }
-
 }

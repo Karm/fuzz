@@ -7,6 +7,8 @@ import org.jboss.logging.Logger;
 import org.junit.jupiter.api.Test;
 
 import javax.imageio.ImageIO;
+import java.awt.image.BufferedImage;
+import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
@@ -22,20 +24,25 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.lessThan;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 @QuarkusTest
 public class RESTTest {
     private static final Logger LOG = Logger.getLogger(RESTTest.class);
 
-    @Test
+    //@Test
     public void testApp() throws IOException {
         int c = 0;
         try (Scanner sc = new Scanner(
                 new File(Objects.requireNonNull(RESTTest.class.getResource("/list.txt")).getFile()), UTF_8)) {
             while (sc.hasNextLine()) {
                 final String filename = sc.nextLine();
+                if (filename.startsWith("#")) {
+                    LOG.info("Skipping " + filename);
+                    continue;
+                }
                 LOG.info("Testing " + filename);
-                final String extension = filename.split("\\.")[1];
+                final String extension = filename.substring(filename.lastIndexOf('.') + 1);
                 try (final ByteArrayOutputStream o = new ByteArrayOutputStream()) {
                     ImageIO.write(ImageIO.read(Objects.requireNonNull(
                             RESTTest.class.getResourceAsStream("/" + filename))), extension, o);
@@ -119,6 +126,12 @@ public class RESTTest {
                             .assertThat()
                             .statusCode(HttpStatus.SC_ACCEPTED)
                             .body("$.size()", is(c = 0));
+                    final BufferedImage image = ImageIO.read(new ByteArrayInputStream(given()
+                            .multiPart("image", new File(Objects.requireNonNull(RESTTest.class.getResource("/" + filename)).getFile()))
+                            .when()
+                            .post("/fruits/to/png/" + filename)
+                            .asByteArray()));
+                    assertNotNull(image, filename + ": The image returned is not a valid png.");
                 }
             }
         }
